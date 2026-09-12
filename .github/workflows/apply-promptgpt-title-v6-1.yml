@@ -1,0 +1,87 @@
+name: Apply PromptGPT v6.1 Semantic Titles
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'promptgpt/refine_titles_v6_1.py'
+      - '.github/workflows/apply-promptgpt-title-v6-1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rebuild and refine titles
+        shell: bash
+        run: |
+          set -euo pipefail
+          python promptgpt/redesign_titles_v6.py
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('promptgpt/gemini.html')
+          s=p.read_text()
+          s=s.replace("data:{'Research Backed':'幫我分析','Master Build':'幫我分析'","data:{'Research Backed':'幫我分析','Master Build':'幫我整理'")
+          p.write_text(s)
+          PY
+          python promptgpt/refine_titles_v6_1.py
+      - name: Review all title families
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          h=Path('promptgpt/gemini.html').read_text()
+          script=h.split('<script>',1)[1].split('</script>',1)[0]
+          Path('/tmp/compile.js').write_text('new Function('+json.dumps(script)+'); console.log("FULL_SCRIPT_SYNTAX=PASS");')
+          start=script.index('const C=')
+          end=script.index('const ALL=buildLibrary();',start)+len('const ALL=buildLibrary();')
+          segment=script[start:end]
+          qa=r'''
+          function vlen(s){return Array.from(String(s).replace(/\s+/g,'').replace(/[A-Za-z0-9.+#_-]+/g,'XX')).length}
+          const lens=ALL.map(x=>vlen(x.title));
+          const avg=lens.reduce((a,b)=>a+b,0)/lens.length;
+          const inTarget=lens.filter(n=>n>=7&&n<=11).length;
+          const tooLong=ALL.filter(x=>vlen(x.title)>13).sort((a,b)=>vlen(b.title)-vlen(a.title));
+          const punct=ALL.filter(x=>/[·｜:：]/.test(x.title));
+          const sameCatDup=ALL.length-new Set(ALL.map(x=>x.ci+'|'+x.title)).size;
+          const banned=ALL.filter(x=>/整理好前端白畫面|研究深度研究|規劃創業問題驗證|確保一組資料操作|重新整理不同程式部分|一開始就吸引人繼續聽/.test(x.title));
+          console.log('RUNTIME_ALL='+ALL.length);
+          console.log('RUNTIME_QA='+JSON.stringify(window.__PROMPTGPT_QA));
+          console.log('TITLE_AVG_VISUAL_LEN='+avg.toFixed(2));
+          console.log('TITLE_7_TO_11='+inTarget+'/'+ALL.length+' ('+(inTarget/ALL.length*100).toFixed(1)+'%)');
+          console.log('SAME_CATEGORY_DUP='+sameCatDup);
+          console.log('TITLE_TOO_LONG='+tooLong.length);
+          console.log('LONGEST='+tooLong.slice(0,40).map(x=>x.title+'['+vlen(x.title)+']').join(' || '));
+          console.log('--- CATEGORY REVIEW ---');
+          for(let ci=0;ci<C.length;ci++) console.log(String(ci).padStart(2,'0')+' '+C[ci][0]+' => '+ALL.filter(x=>x.ci===ci).slice(0,4).map(x=>x.title).join(' / '));
+          if(ALL.length!==2048)process.exit(81);
+          if(window.__PROMPTGPT_QA.minQuality<94)process.exit(82);
+          if(punct.length)process.exit(83);
+          if(sameCatDup)process.exit(84);
+          if(banned.length)process.exit(85);
+          if(inTarget/ALL.length<0.90)process.exit(86);
+          if(avg>10.2)process.exit(87);
+          if(tooLong.length>12)process.exit(88);
+          if(!ALL.every(p=>p.prompt.includes('【請交給我】')))process.exit(89);
+          console.log('V6_1_HUMAN_TITLE_QA=PASS');
+          '''
+          Path('/tmp/runtime.js').write_text('global.window={};\n'+segment+qa)
+          PY
+          node /tmp/compile.js
+          node /tmp/runtime.js
+      - name: Commit verified website
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- promptgpt/gemini.html; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add promptgpt/gemini.html
+          git commit -m 'Refine PromptGPT titles into short human wording'
+          git push
