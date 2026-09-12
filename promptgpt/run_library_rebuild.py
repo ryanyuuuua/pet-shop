@@ -16,3 +16,10 @@ code = code.replace(
 )
 compile(code, 'promptgpt-library-v2-inline', 'exec')
 exec(code, {'__name__': '__main__'})
+
+# Always apply the v3 UX layer after a library rebuild so future rebuilds keep
+# human-readable titles and the AI prompt customizer.
+upgrade_path = Path('promptgpt/upgrade_v3_titles_customizer.py')
+upgrade_code = upgrade_path.read_text()
+compile(upgrade_code, str(upgrade_path), 'exec')
+exec(upgrade_code, {'__name__': '__main__'})
