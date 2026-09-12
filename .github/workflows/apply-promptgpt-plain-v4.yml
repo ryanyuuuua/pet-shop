@@ -1,0 +1,69 @@
+name: Apply PromptGPT Plain Language v4
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'promptgpt/upgrade_plain_language_v4.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply plain-language upgrade
+        run: python promptgpt/upgrade_plain_language_v4.py
+
+      - name: Verify 2048 prompts, readable titles and browser JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          h=Path('promptgpt/gemini.html').read_text()
+          required=['const CAT_PLAIN=','const FOCUS_PLAIN=','function _plainFocus','【你要完成的事】','【最後要交給我的內容】','不要為了看起來專業而堆砌術語','簡單易明 Prompt 庫']
+          for x in required:
+              assert x in h, x
+          script=h.split('<script>',1)[1].split('</script>',1)[0]
+          Path('/tmp/compile.js').write_text('new Function('+json.dumps(script)+'); console.log("FULL_SCRIPT_SYNTAX=PASS");')
+          start=script.index('const C=')
+          end=script.index('const ALL=buildLibrary();',start)+len('const ALL=buildLibrary();')
+          segment=script[start:end]
+          qa=r'''
+          console.log('RUNTIME_ALL='+ALL.length);
+          console.log('RUNTIME_QA='+JSON.stringify(window.__PROMPTGPT_QA));
+          console.log('TITLE_SAMPLE='+ALL.slice(0,12).map(x=>x.title).join(' || '));
+          const badMode=/Master Build|Expert Audit|Strategy First|Production Ready|Optimization|Research Backed|Rapid MVP|A\/B Experiment|Reverse Engineer|Decision Framework|Troubleshoot|SOP System/;
+          if(ALL.length!==2048)process.exit(21);
+          if(window.__PROMPTGPT_QA.minQuality<94)process.exit(22);
+          if(ALL.some(p=>badMode.test(p.title)))process.exit(23);
+          if(!ALL.every(p=>p.prompt.includes('全程用一般人看得懂的說話')))process.exit(24);
+          if(!ALL.every(p=>p.prompt.includes('【完成前檢查】')))process.exit(25);
+          const raw=[];for(const c of C)for(const f of c[5])if(_plainFocus(f)===f&&/[A-Za-z]/.test(f))raw.push(f);
+          console.log('UNMAPPED_ENGLISH_FOCUS='+[...new Set(raw)].join(' | '));
+          console.log('PLAIN_LANGUAGE_RUNTIME=PASS');
+          '''
+          Path('/tmp/runtime.js').write_text('global.window={};\n'+segment+qa)
+          PY
+          node /tmp/compile.js
+          node /tmp/runtime.js
+
+      - name: Commit upgraded website
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- promptgpt/gemini.html; then
+            echo 'No website changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add promptgpt/gemini.html
+          git commit -m 'Make PromptGPT titles and prompts easier to understand'
+          git push
