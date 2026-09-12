@@ -1,0 +1,85 @@
+name: Apply PromptGPT v6 Human Titles
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'promptgpt/redesign_titles_v6.py'
+      - '.github/workflows/apply-promptgpt-title-v6.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  redesign:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rebuild titles carefully
+        shell: bash
+        run: |
+          set -euo pipefail
+          python promptgpt/redesign_titles_v6.py
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('promptgpt/gemini.html')
+          s=p.read_text()
+          s=s.replace("data:{'Research Backed':'幫我分析','Master Build':'幫我分析'","data:{'Research Backed':'幫我分析','Master Build':'幫我整理'")
+          p.write_text(s)
+          PY
+      - name: Deep title and prompt QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          h=Path('promptgpt/gemini.html').read_text()
+          script=h.split('<script>',1)[1].split('</script>',1)[0]
+          Path('/tmp/compile.js').write_text('new Function('+json.dumps(script)+'); console.log("FULL_SCRIPT_SYNTAX=PASS");')
+          start=script.index('const C=')
+          end=script.index('const ALL=buildLibrary();',start)+len('const ALL=buildLibrary();')
+          segment=script[start:end]
+          qa=r'''
+          function vlen(s){return Array.from(String(s).replace(/\s+/g,'').replace(/[A-Za-z0-9.+#_-]+/g,'XX')).length}
+          const lens=ALL.map(x=>vlen(x.title));
+          const avg=lens.reduce((a,b)=>a+b,0)/lens.length;
+          const inTarget=lens.filter(n=>n>=7&&n<=11).length;
+          const tooLong=ALL.filter(x=>vlen(x.title)>13).sort((a,b)=>vlen(b.title)-vlen(a.title));
+          const punct=ALL.filter(x=>/[·｜:：]/.test(x.title));
+          const exactDup=ALL.length-new Set(ALL.map(x=>x.title)).size;
+          console.log('RUNTIME_ALL='+ALL.length);
+          console.log('RUNTIME_QA='+JSON.stringify(window.__PROMPTGPT_QA));
+          console.log('TITLE_AVG_VISUAL_LEN='+avg.toFixed(2));
+          console.log('TITLE_7_TO_11='+inTarget+'/'+ALL.length+' ('+(inTarget/ALL.length*100).toFixed(1)+'%)');
+          console.log('TITLE_EXACT_DUP='+exactDup);
+          console.log('TITLE_TOO_LONG='+tooLong.length);
+          console.log('LONGEST='+tooLong.slice(0,50).map(x=>x.title+'['+vlen(x.title)+']').join(' || '));
+          for(const ci of [0,2,4,10,13,18,20,27,32,34,38,44,45,47,53,60,63]){
+            console.log('CAT_'+ci+'='+ALL.filter(x=>x.ci===ci).slice(0,8).map(x=>x.title).join(' || '));
+          }
+          if(ALL.length!==2048)process.exit(71);
+          if(window.__PROMPTGPT_QA.minQuality<94)process.exit(72);
+          if(punct.length)process.exit(73);
+          if(exactDup)process.exit(74);
+          if(inTarget/ALL.length<0.82)process.exit(75);
+          if(avg>10.6)process.exit(76);
+          if(tooLong.length>60)process.exit(77);
+          if(!ALL.every(p=>p.prompt.includes('【請交給我】')))process.exit(78);
+          console.log('V6_HUMAN_TITLE_QA=PASS');
+          '''
+          Path('/tmp/runtime.js').write_text('global.window={};\n'+segment+qa)
+          PY
+          node /tmp/compile.js
+          node /tmp/runtime.js
+      - name: Commit verified website
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- promptgpt/gemini.html; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add promptgpt/gemini.html
+          git commit -m 'Rewrite PromptGPT titles in simple human language'
+          git push
