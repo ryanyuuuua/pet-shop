@@ -1,0 +1,60 @@
+name: Apply PromptGPT Plain Language v4.2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'promptgpt/cleanup_plain_ui_v4_2.py'
+      - '.github/workflows/apply-promptgpt-plain-v4-2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply UI cleanup
+        run: python promptgpt/cleanup_plain_ui_v4_2.py
+      - name: Verify final website
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          h=Path('promptgpt/gemini.html').read_text()
+          assert 'PromptGPT · PromptGPT' not in h
+          assert '<button>高級 SaaS 網站</button>' not in h
+          assert '<button>Code Review</button>' not in h
+          assert '2048 Curated Prompts' not in h
+          assert '專業 Prompt，用人話寫' in h
+          script=h.split('<script>',1)[1].split('</script>',1)[0]
+          Path('/tmp/compile.js').write_text('new Function('+json.dumps(script)+'); console.log("FULL_SCRIPT_SYNTAX=PASS");')
+          start=script.index('const C=')
+          end=script.index('const ALL=buildLibrary();',start)+len('const ALL=buildLibrary();')
+          segment=script[start:end]
+          qa=r'''
+          console.log('RUNTIME_ALL='+ALL.length);
+          console.log('RUNTIME_QA='+JSON.stringify(window.__PROMPTGPT_QA));
+          if(ALL.length!==2048)process.exit(41);
+          if(window.__PROMPTGPT_QA.minQuality<94)process.exit(42);
+          if(!ALL.every(p=>p.prompt.includes('全程用一般人看得懂的說話')))process.exit(43);
+          console.log('FINAL_PLAIN_LANGUAGE_QA=PASS');
+          '''
+          Path('/tmp/runtime.js').write_text('global.window={};\n'+segment+qa)
+          PY
+          node /tmp/compile.js
+          node /tmp/runtime.js
+      - name: Commit cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- promptgpt/gemini.html; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add promptgpt/gemini.html
+          git commit -m 'Polish PromptGPT UI for non-technical users'
+          git push
