@@ -1,0 +1,71 @@
+name: Apply PromptGPT Plain Language v4.1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'promptgpt/polish_plain_language_v4_1.py'
+      - '.github/workflows/apply-promptgpt-plain-v4-1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  polish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply final plain-language polish
+        run: python promptgpt/polish_plain_language_v4_1.py
+
+      - name: Verify every title and prompt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          h=Path('promptgpt/gemini.html').read_text()
+          for x in ['const SCOPE_PLAIN=','function _plainScope','function _modeDeliverable','要特別留意：${_plainScope','E. ${_modeDeliverable','全文用一般人看得懂的說話']:
+              assert x in h, x
+          script=h.split('<script>',1)[1].split('</script>',1)[0]
+          Path('/tmp/compile.js').write_text('new Function('+json.dumps(script)+'); console.log("FULL_SCRIPT_SYNTAX=PASS");')
+          start=script.index('const C=')
+          end=script.index('const ALL=buildLibrary();',start)+len('const ALL=buildLibrary();')
+          segment=script[start:end]
+          qa=r'''
+          console.log('RUNTIME_ALL='+ALL.length);
+          console.log('RUNTIME_QA='+JSON.stringify(window.__PROMPTGPT_QA));
+          console.log('TITLE_SAMPLE='+ALL.slice(0,16).map(x=>x.title).join(' || '));
+          const raw=[];for(const c of C)for(const f of c[5])if(_plainFocus(f)===f&&/[A-Za-z]/.test(f))raw.push(f);
+          const left=[...new Set(raw)];
+          console.log('UNMAPPED_ENGLISH_FOCUS='+left.join(' | '));
+          if(left.length)process.exit(31);
+          if(ALL.length!==2048)process.exit(32);
+          if(window.__PROMPTGPT_QA.minQuality<94)process.exit(33);
+          if(!ALL.every(p=>p.prompt.includes('全程用一般人看得懂的說話')))process.exit(34);
+          if(!ALL.every(p=>p.prompt.includes('要特別留意：')))process.exit(35);
+          if(ALL.some(p=>/Master Build|Expert Audit|Production Ready|Research Backed|Troubleshoot|SOP System/.test(p.title)))process.exit(36);
+          console.log('NON_TECHNICAL_TITLE_QA=PASS');
+          console.log('PLAIN_PROMPT_QA=PASS');
+          '''
+          Path('/tmp/runtime.js').write_text('global.window={};\n'+segment+qa)
+          PY
+          node /tmp/compile.js
+          node /tmp/runtime.js
+
+      - name: Commit polished website
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- promptgpt/gemini.html; then
+            echo 'No website changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add promptgpt/gemini.html
+          git commit -m 'Finish plain-language polish across PromptGPT'
+          git push
