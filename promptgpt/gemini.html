@@ -8,10 +8,10 @@ function _pickModes(ci,fi){const cat=C[ci][0];const groups={
 'Frontend':[0,3,1,10],'Backend':[0,3,1,10],'Mobile App':[0,3,1,10],'API / Integrations':[0,3,1,10],'Database / SQL':[0,3,1,10],'AI Agent':[0,3,1,10],
 'Debugging':[10,1,4,11],'Code Review / Refactor':[1,4,10,3],'DevOps / Cloud':[0,3,10,11],
 'Prompt Engineering':[0,1,4,7],'Automation / No-code':[0,11,10,4],
-'Startup 驗證':[5,6,2,9],'產品管理':[2,9,6,1],'商業策略':[2,5,9,4],'市場研究':[5,1,9,2],'定價 / 變現':[2,5,7,4],
+'Startup 驗證':[5,6,2,9],'產品管理':[0,2,1,4],'商業策略':[2,5,9,4],'市場研究':[5,0,1,4],'定價 / 變現':[2,5,1,4],
 'Sales':[0,4,1,2],'Marketing':[0,4,7,1],'Copywriting':[0,4,1,2],'社交媒體':[0,4,7,1],'SEO / GEO':[0,4,1,5],'Email / Newsletter':[0,4,7,1],'E-commerce':[0,4,7,1],
-'客戶服務':[0,11,1,4],'用戶研究':[5,0,1,9],'品牌策略':[2,0,5,1],'營運 / SOP':[11,0,1,4],'HR / 招聘':[0,11,1,4],'求職 / Portfolio':[0,1,4,2],
-'數據分析':[5,0,1,9],'研究 / Fact-check':[5,1,9,0],'學術寫作':[0,1,4,2],'中文作文':[0,1,4,2],'英文寫作':[0,1,4,2],'學習 / 考試':[0,1,5,4],'STEM':[0,1,5,4],
+'客戶服務':[0,11,1,4],'用戶研究':[0,2,1,4],'品牌策略':[2,0,5,1],'營運 / SOP':[11,0,1,4],'HR / 招聘':[0,2,1,4],'求職 / Portfolio':[0,1,4,2],
+'數據分析':[5,0,1,9],'研究 / Fact-check':[5,1,9,0],'學術寫作':[0,1,4,2],'中文作文':[0,1,4,2],'英文寫作':[0,1,4,2],'學習 / 考試':[0,1,2,4],'STEM':[0,1,5,4],
 '簡報 / Pitch':[0,1,4,2],'故事創作':[0,1,4,2],'YouTube / Video Script':[0,1,4,2],'Podcast / Audio':[0,1,4,2],'翻譯 / Localization':[0,1,4,2],'遊戲設計':[0,2,1,4]};
 if(groups[cat])return groups[cat];if(C[ci][4]==='visual')return[0,1,4,8];return[0,1,2,4]}
 const CAT_PLAIN={
@@ -44,7 +44,7 @@ const TITLE_STYLE={
 '客戶服務':'service','用戶研究':'userresearch','品牌策略':'brand','營運 / SOP':'operations','HR / 招聘':'hr','求職 / Portfolio':'career',
 '數據分析':'data','研究 / Fact-check':'research','學術寫作':'writing','中文作文':'writing','英文寫作':'writing','學習 / 考試':'study','STEM':'stem',
 '簡報 / Pitch':'presentation','故事創作':'writing','YouTube / Video Script':'writing','Podcast / Audio':'media','翻譯 / Localization':'translation','遊戲設計':'game',
-'產品攝影':'visual','飲品 / 食物攝影':'visual','Fashion Editorial':'visual','廣告創意圖':'visual','社交廣告視覺':'visual','電影感圖片':'visual','插畫':'visual','Anime / Manga':'visual','Logo / Brand Identity':'visual','包裝設計':'visual','海報 / 平面設計':'visual','建築視覺':'visual','室內設計圖':'visual','角色設計':'visual','Game Art':'visual','3D / CGI':'visual','AI Video':'visual','Storyboard / Shot List':'visual','Infographic / Data Viz':'visual','UI Mockup / App Visual':'visual'};
+'產品攝影':'visual','飲品 / 食物攝影':'visual','Fashion Editorial':'visual','廣告創意圖':'visual','社交廣告視覺':'visual','電影感圖片':'visual','插畫':'visual','Anime / Manga':'visual','Logo / Brand Identity':'designvisual','包裝設計':'designvisual','海報 / 平面設計':'designvisual','建築視覺':'designvisual','室內設計圖':'designvisual','角色設計':'designvisual','Game Art':'designvisual','3D / CGI':'visual','AI Video':'visual','Storyboard / Shot List':'visual','Infographic / Data Viz':'designvisual','UI Mockup / App Visual':'designvisual'};
 const TITLE_ACTION={
 website:{'Master Build':'幫我設計','Strategy First':'幫我規劃','Expert Audit':'幫我檢查','Optimization':'幫我改善'},
 engineering:{'Master Build':'幫我建立','Production Ready':'幫我完成','Expert Audit':'幫我檢查','Troubleshoot':'幫我修好'},
@@ -73,13 +73,14 @@ hr:{'Master Build':'幫我準備','SOP System':'整理好','Expert Audit':'幫�
 career:{'Master Build':'幫我準備','Expert Audit':'幫我修改','Optimization':'幫我改善','Strategy First':'幫我規劃'},
 data:{'Research Backed':'幫我分析','Master Build':'幫我整理','Expert Audit':'幫我檢查','Decision Framework':'幫我比較'},
 study:{'Master Build':'幫我整理','Expert Audit':'幫我檢查','Research Backed':'幫我解釋','Optimization':'幫我改善'},
-stem:{'Master Build':'幫我解答','Expert Audit':'幫我檢查','Research Backed':'幫我解釋','Optimization':'幫我改善'},
+stem:{'Master Build':'幫我解答','Expert Audit':'幫我檢查','Research Backed':'幫我講解','Optimization':'幫我改正'},
 presentation:{'Master Build':'幫我製作','Expert Audit':'幫我修改','Optimization':'幫我改善','Strategy First':'幫我規劃'},
 media:{'Master Build':'幫我製作','Expert Audit':'幫我修改','Optimization':'幫我改善','Strategy First':'幫我規劃'},
 translation:{'Master Build':'幫我翻譯','Expert Audit':'幫我校對','Optimization':'幫我潤色','Strategy First':'幫我調整'},
 game:{'Master Build':'幫我設計','Strategy First':'幫我規劃','Expert Audit':'幫我檢查','Optimization':'幫我改善'},
-visual:{'Master Build':'幫我製作','Expert Audit':'幫我改善','Optimization':'幫我優化','Reverse Engineer':'參考重做'}};
+visual:{'Master Build':'幫我製作','Expert Audit':'幫我改善','Optimization':'幫我優化','Reverse Engineer':'參考重做'},designvisual:{'Master Build':'幫我設計','Expert Audit':'幫我改善','Optimization':'幫我優化','Reverse Engineer':'參考重做'}};
 const TITLE_BASE={
+'Stripe 整合':'網上付款','Google API 整合':'Google服務','多系統資料同步':'系統資料同步','第三方服務遷移':'外部服務搬遷','履歷重寫':'履歷','繁中香港化':'香港繁中','數學解題':'數學題','物理解題':'物理題','Hero Character':'遊戲主角','Villain':'反派角色','NPC':'遊戲配角','Boss Design':'Boss角色',
 '交易一致性':'資料交易','模組邊界重整':'程式模組','開場 Hook':'節目開場','深度研究':'研究資料','Fact Check':'資料查證','問題驗證':'創業想法','ICP 定義':'理想客戶','Cold Outreach':'開發客戶','Discovery Call':'客戶需要','Brand Positioning':'品牌定位',
 '品牌官網資訊架構':'品牌網頁','高轉換 Landing Page':'宣傳單頁','SaaS 首頁策略':'軟件首頁','服務型企業網站':'公司網站','作品集網站':'作品集網站','活動及發布頁':'新品宣傳頁','多語網站規劃':'多語網站','網站重設與遷移':'網站改版',
 '新手 onboarding':'新手教學','Dashboard 資訊架構':'數據主頁','Design System':'介面規則','Mobile Navigation':'手機選單','React 元件架構':'網頁程式','Next.js App Router':'網站結構','RWD 手機適配':'手機版網站','Accessibility 實作':'無障礙網站',
@@ -111,6 +112,15 @@ const TITLE_BASE={
 function _titleBase(focus){let x=TITLE_BASE[focus]||_shortFocus(focus);x=String(x).replace(/\s*／\s*/g,'／').replace(/AI \s*/g,'AI').replace(/App \s*/g,'App ').replace(/網上訂閱軟件/g,'軟件').replace(/的內容/g,'').replace(/的流程/g,'流程').replace(/完整/g,'').trim();return x}
 function _titleAction(category,mode){const style=TITLE_STYLE[category]||'website';const rules=TITLE_ACTION[style]||{};const fallback={'Master Build':'幫我製作','Expert Audit':'幫我檢查','Strategy First':'幫我規劃','Production Ready':'幫我完成','Optimization':'幫我改善','Research Backed':'幫我研究','Rapid MVP':'幫我測試','A/B Experiment':'幫我比較','Reverse Engineer':'參考重做','Decision Framework':'幫我選擇','Troubleshoot':'幫我修好','SOP System':'整理好'};return rules[mode]||fallback[mode]||'幫我處理'}
 const TITLE_SPECIAL={
+'繁中香港化':{'Master Build':'轉成香港繁中','Expert Audit':'校對香港繁中','Optimization':'潤色香港繁中','Strategy First':'調整香港用語'},
+'Go to Market':{'Master Build':'制定產品推出計劃','Optimization':'改善產品推出計劃','A/B Experiment':'比較產品推出方案','Expert Audit':'檢查產品推出計劃'},
+'Campaign Strategy':{'Master Build':'制定宣傳活動計劃','Optimization':'改善宣傳活動計劃','A/B Experiment':'比較宣傳活動方案','Expert Audit':'檢查宣傳活動計劃'},
+'Audience Segmentation':{'Master Build':'整理目標客戶分類','Optimization':'改善目標客戶分類','A/B Experiment':'比較客戶分類方式','Expert Audit':'檢查目標客戶分類'},
+'Channel Mix':{'Master Build':'規劃宣傳渠道','Optimization':'改善宣傳渠道','A/B Experiment':'比較宣傳渠道','Expert Audit':'檢查宣傳渠道'},
+'Lead Magnet':{'Master Build':'製作吸客內容','Optimization':'改善吸客內容','A/B Experiment':'比較吸客內容','Expert Audit':'檢查吸客內容'},
+'Referral Program':{'Master Build':'設計客戶轉介計劃','Optimization':'改善客戶轉介計劃','A/B Experiment':'比較客戶轉介方案','Expert Audit':'檢查客戶轉介計劃'},
+'Launch Plan':{'Master Build':'制定新品推出計劃','Optimization':'改善新品推出計劃','A/B Experiment':'比較新品推出方案','Expert Audit':'檢查新品推出計劃'},
+'Marketing Dashboard':{'Master Build':'製作宣傳數據表','Optimization':'改善宣傳數據表','A/B Experiment':'比較宣傳數據版面','Expert Audit':'檢查宣傳數據表'},
 '問題驗證':{'Research Backed':'研究創業需求','Rapid MVP':'測試創業想法','Strategy First':'規劃驗證方法','Decision Framework':'判斷創業需求'},
 'ICP 定義':{'Research Backed':'研究理想客戶','Rapid MVP':'測試理想客群','Strategy First':'規劃目標客群','Decision Framework':'選出理想客群'},
 '深度研究':{'Research Backed':'幫我做深度研究','Expert Audit':'檢查研究資料','Decision Framework':'比較研究結果','Master Build':'整理研究資料'},
