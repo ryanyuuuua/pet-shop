@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'promptgpt/upgrade_plain_language_v4.py'
+      - '.github/workflows/apply-promptgpt-plain-v4.yml'
   workflow_dispatch:
 
 permissions:
