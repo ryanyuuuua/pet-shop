@@ -17,8 +17,40 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Make customizer patch tolerant
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('promptgpt/upgrade_plain_language_v4.py')
+          s=p.read_text()
+          old="assert old in s, 'customizer instruction marker missing'\ns = s.replace(old, new, 1)"
+          new="if old in s:\n    s = s.replace(old, new, 1)"
+          assert old in s
+          p.write_text(s.replace(old,new,1))
+          PY
+
       - name: Apply plain-language upgrade
         run: python promptgpt/upgrade_plain_language_v4.py
+
+      - name: Upgrade AI customizer instructions
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('promptgpt/gemini.html')
+          s=p.read_text()
+          if '全文用一般人看得懂的說話；真的需要專業詞時' not in s:
+              a='9. 產出必須比原版更貼合、更短而不失專業，不要只是把使用者需求加在最前面。'
+              b='10. 只輸出「重寫後的完整 Prompt」'
+              ia=s.index(a)
+              ib=s.index(b,ia)
+              insert=(a+'\\\n10. 全文用一般人看得懂的說話；真的需要專業詞時，第一次出現要用括號簡單解釋。'
+                      +'\\\n11. 簡化文字時不可刪走原本的重要限制、驗收標準、風險處理或輸出格式。'
+                      +'\\\n12. '+s[ib+len('10. '):])
+              s=s[:ia]+insert
+              p.write_text(s)
+          PY
 
       - name: Verify 2048 prompts, readable titles and browser JavaScript
         shell: bash
@@ -28,7 +60,7 @@ jobs:
           from pathlib import Path
           import json
           h=Path('promptgpt/gemini.html').read_text()
-          required=['const CAT_PLAIN=','const FOCUS_PLAIN=','function _plainFocus','【你要完成的事】','【最後要交給我的內容】','不要為了看起來專業而堆砌術語','簡單易明 Prompt 庫']
+          required=['const CAT_PLAIN=','const FOCUS_PLAIN=','function _plainFocus','【你要完成的事】','【最後要交給我的內容】','不要為了看起來專業而堆砌術語','簡單易明 Prompt 庫','全文用一般人看得懂的說話；真的需要專業詞時']
           for x in required:
               assert x in h, x
           script=h.split('<script>',1)[1].split('</script>',1)[0]
