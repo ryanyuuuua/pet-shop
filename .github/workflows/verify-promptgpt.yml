@@ -1,0 +1,43 @@
+name: Verify PromptGPT Live
+
+on:
+  push:
+    paths:
+      - '.github/workflows/verify-promptgpt.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify Vercel page returns HTTP 200
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL='https://promptgpt-gemini-ryans-projects-9a0ab3e7.vercel.app'
+          CODE=$(curl -sS -L --max-time 30 -o /tmp/promptgpt-live.html -w '%{http_code}' "$URL")
+          echo "VERCEL_HTTP_STATUS=$CODE"
+          test "$CODE" = "200"
+          grep -q 'PromptGPT' /tmp/promptgpt-live.html
+          grep -q '1000 Premium Prompts' /tmp/promptgpt-live.html
+          echo 'VERCEL_PAGE_MARKERS=PASS'
+
+      - name: Verify hosted PromptGPT source is reachable
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC='https://raw.githubusercontent.com/ryanyuuuua/pet-shop/7ae715252038f9c5fe156f0ca7cb3053ec32a054/promptgpt/gemini.html'
+          CODE=$(curl -sS -L --max-time 30 -o /tmp/promptgpt-source.html -w '%{http_code}' "$SRC")
+          echo "SOURCE_HTTP_STATUS=$CODE"
+          test "$CODE" = "200"
+          grep -q 'PromptGPT' /tmp/promptgpt-source.html
+          grep -q 'Gemini' /tmp/promptgpt-source.html
+          grep -q 'pg-gemini-key' /tmp/promptgpt-source.html
+          echo 'SOURCE_MARKERS=PASS'
+
+      - name: Summary
+        run: |
+          echo 'PROMPTGPT_LIVE_VERIFY=PASS'
