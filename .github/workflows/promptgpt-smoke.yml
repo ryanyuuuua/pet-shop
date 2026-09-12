@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Wait for Vercel build
         run: sleep 20
-      - name: Diagnose public production
+      - name: Verify public homepage and Gemini API
         run: |
           set +e
           PASS=1
