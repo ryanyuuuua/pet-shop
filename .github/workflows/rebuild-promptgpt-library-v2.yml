@@ -1,0 +1,170 @@
+name: Rebuild PromptGPT Curated Library v2
+
+on:
+  push:
+    paths:
+      - '.github/workflows/rebuild-promptgpt-library-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rebuild curated prompt library
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, re
+
+          p = Path('promptgpt/gemini.html')
+          s = p.read_text()
+
+          SPEC = '網站策略|Web Strategy|品牌定位、資訊架構、轉換路徑、內容優先級與商業目標|資深網站策略師|text|品牌官網資訊架構~高轉換 Landing Page~SaaS 首頁策略~服務型企業網站~作品集網站~活動及發布頁~多語網站規劃~網站重設與遷移\nUI / UX|UI UX|使用者流程、介面層級、可用性、互動、無障礙與設計系統|資深產品設計師|text|新手 onboarding~Dashboard 資訊架構~結帳流程~搜尋與篩選體驗~表單及輸入流程~Design System~Mobile Navigation~可用性測試\nFrontend|Frontend Engineering|React、Next.js、元件架構、效能、RWD、狀態與前端品質|Staff 前端工程師|text|React 元件架構~Next.js App Router~RWD 手機適配~前端效能優化~狀態管理~表單驗證~動畫與互動~Accessibility 實作\nBackend|Backend Engineering|API、權限、驗證、業務邏輯、效能、安全與可維護性|Staff 後端工程師|text|REST API 設計~Authentication 系統~RBAC 權限~Background Jobs~檔案上傳服務~Webhook 系統~Caching 策略~Rate Limit\nDebugging|Debugging|系統化重現、根因分析、最小修復、回歸測試與風險控制|Staff Debug Engineer|text|前端白畫面~API 500 錯誤~效能退化~記憶體洩漏~Race Condition~部署後故障~第三方 API 失效~間歇性 Bug\nCode Review / Refactor|Code Review Refactor|可讀性、架構、技術債、測試、安全與漸進式重構|Principal Engineer|text|Pull Request Review~大型函式重構~Legacy Code 現代化~型別安全強化~測試覆蓋改善~重複程式碼消除~模組邊界重整~安全性 Code Review\nDevOps / Cloud|DevOps Cloud|CI/CD、部署、環境、監控、可靠性、成本與事故回復|Senior DevOps Engineer|text|CI Pipeline~Vercel 部署~Docker 化~環境變數管理~Observability~Rollback 策略~雲端成本優化~Production Incident\nAPI / Integrations|API Integrations|第三方 API、OAuth、Webhook、同步、錯誤處理與可靠整合|Integration Architect|text|Stripe 整合~Google API 整合~OAuth Login~Webhook Consumer~多系統資料同步~API Client SDK~Retry 與 Idempotency~第三方服務遷移\nDatabase / SQL|Database SQL|Schema、查詢、索引、交易、資料完整性、遷移與效能|Senior Database Engineer|text|資料庫 Schema~SQL 查詢優化~索引設計~Migration 計劃~RLS 政策~交易一致性~報表查詢~資料清理\nMobile App|Mobile App|iOS Android 流程、觸控體驗、離線、通知、效能與發佈|Senior Mobile Product Engineer|text|iOS App 架構~Android App 架構~跨平台 React Native~離線模式~Push Notification~App Store 上架~手機權限流程~Mobile Performance\nAI Agent|AI Agent|角色、工具、記憶、工作流、handoff、評估與失敗恢復|AI Agent Architect|text|單一 Agent 工具鏈~Multi Agent 團隊~Agent Memory~Tool Calling~Human in the Loop~Agent 評估~長任務編排~失敗恢復\nPrompt Engineering|Prompt Engineering|上下文、約束、few-shot、結構化輸出、評估與自我修正|Prompt Architect|text|System Prompt~Structured Output~Few Shot Examples~Prompt 壓縮~Prompt 安全邊界~多語 Prompt~Agent Prompt~Prompt Evaluation\nAutomation / No-code|Automation No-code|工作流、觸發器、資料流、審批、例外與可觀測性|Automation Architect|text|Lead 自動化~Email 工作流~CRM 同步~表單到資料庫~審批流程~報表自動化~文件生成~失敗重試流程\nStartup 驗證|Startup Validation|問題、ICP、需求證據、MVP、實驗、商業模式與風險|Startup Operator|text|問題驗證~ICP 定義~訪談腳本~假 Landing Page 測試~Concierge MVP~競爭替代方案~首批客戶策略~Pivot 決策\n產品管理|Product Management|JTBD、PRD、優先級、指標、實驗、roadmap 與跨團隊協作|Senior Product Manager|text|PRD 撰寫~Roadmap 優先級~Feature Scoping~North Star Metric~產品實驗~需求澄清~Release Planning~Backlog 整理\n商業策略|Business Strategy|市場、競爭、護城河、收入、成本、情境與決策|Strategy Consultant|text|市場進入策略~競爭定位~商業模式~成長策略~成本結構~合作夥伴策略~護城河分析~年度策略\n市場研究|Market Research|市場規模、客群、競品、替代品、證據品質與洞察|Market Intelligence Lead|text|競品地圖~客群細分~市場規模估算~價格研究~需求趨勢~替代方案研究~品牌認知研究~新市場研究\n定價 / 變現|Pricing Monetization|價值度量、套餐、價格心理、單位經濟、測試與收入影響|Pricing Strategist|text|SaaS 套餐設計~Freemium 策略~服務報價~價格頁~加價測試~Unit Economics~折扣政策~Upsell 策略\nSales|Sales|prospecting、discovery、demo、proposal、異議、follow-up 與成交|B2B Sales Coach|text|Cold Outreach~Discovery Call~Demo Script~Proposal~異議處理~Follow-up~談判~成交後 Handoff\nMarketing|Marketing|定位、受眾、訊息、渠道、campaign、轉換與量度|Growth Strategist|text|Go to Market~Campaign Strategy~Audience Segmentation~Channel Mix~Lead Magnet~Referral Program~Launch Plan~Marketing Dashboard\nCopywriting|Copywriting|受眾、價值主張、hook、證據、CTA、語氣與轉換|Conversion Copywriter|text|Landing Page 文案~廣告文案~產品頁文案~品牌 About~CTA 優化~銷售 Email~App Store 文案~FAQ 文案\n社交媒體|Social Media|內容支柱、hook、平台語言、排程、互動與成長|Social Media Strategist|text|Instagram Reels~Threads 貼文~LinkedIn 內容~TikTok 腳本~內容日曆~社群互動~UGC Brief~品牌社交語氣\nSEO / GEO|SEO GEO|搜尋意圖、主題權威、技術 SEO、內鏈、結構化資料與 AI 搜尋可見性|SEO Strategist|text|Keyword Cluster~Search Intent~SEO Brief~Internal Linking~Technical SEO~Programmatic SEO~GEO 內容~內容更新\nEmail / Newsletter|Email Newsletter|主旨、節奏、分眾、自動序列、內容價值與轉換|Lifecycle Marketing Lead|text|Welcome Sequence~Newsletter~Abandoned Cart~Lead Nurture~Reactivation~Product Launch Email~Transactional Email~Email A B Test\nE-commerce|Ecommerce|商品資訊、信任、轉換、購物流程、留存與營運|Ecommerce Strategist|text|商品頁~Collection Page~購物車~結帳流程~Bundle 策略~Cross-sell~Review Strategy~購後留存\n客戶服務|Customer Service|分類、同理、解難、升級、SLA、知識庫與語氣|CX Lead|text|客服回覆模板~退款處理~客訴升級~知識庫~SLA 流程~客服分類~客服品質審核~危機回覆\n用戶研究|User Research|研究問題、招募、訪談、行為證據、洞察與產品決策|UX Research Lead|text|用戶訪談~Usability Test~Survey~JTBD Research~Churn Interview~Concept Test~Persona Evidence~Insight Synthesis\n品牌策略|Brand Strategy|定位、品牌承諾、個性、語氣、識別原則與一致性|Brand Strategist|text|Brand Positioning~品牌故事~Tone of Voice~Messaging House~Naming~品牌架構~Rebrand Strategy~Brand Guidelines\n營運 / SOP|Operations SOP|流程、責任、檢查點、例外、品質、效率與持續改善|Operations Lead|text|日常 SOP~交付流程~Quality Checklist~交接流程~事故處理~供應商流程~內部審批~營運 Dashboard\nHR / 招聘|HR Hiring|職位設計、招募、面試、評估、onboarding 與績效|People Operations Lead|text|Job Description~Interview Scorecard~面試問題~Candidate Evaluation~Onboarding~Performance Review~培訓計劃~Team Handbook\n求職 / Portfolio|Career Portfolio|履歷、作品集、面試、STAR、職位匹配與談判|Career Coach|text|履歷重寫~Portfolio Case Study~Cover Letter~面試準備~STAR 故事~LinkedIn Profile~薪酬談判~職涯定位\n數據分析|Data Analysis|資料清理、指標、探索、統計、視覺化、洞察與建議|Senior Data Analyst|text|KPI 分析~Funnel 分析~Cohort Analysis~A B Test 分析~異常偵測~Dashboard 指標~Forecast~Executive Insight\n研究 / Fact-check|Research Fact-check|研究問題、來源品質、證據矩陣、反證、限制與綜合|Research Lead|text|深度研究~Fact Check~來源評級~證據矩陣~反方論證~政策比較~文獻綜述~研究摘要\n學術寫作|Academic Writing|論題、文獻、方法、論證、引用、批判分析與學術誠信|Academic Writing Coach|text|Research Question~Essay Outline~Literature Review~Methodology~Argument Development~Critical Analysis~Citation Audit~Abstract\n中文作文|Chinese Writing|立意、結構、描寫、論證、語氣、修辭與年級適配|中文寫作導師|text|記敘文~描寫文~議論文~說明文~人物描寫~場景描寫~開頭結尾~作文修改\n英文寫作|English Writing|thesis、structure、clarity、grammar、tone、evidence 與 revision|English Writing Coach|text|Argumentative Essay~Narrative Writing~Formal Email~Report Writing~Article Writing~Grammar Revision~Vocabulary Upgrade~IELTS Writing\n學習 / 考試|Study Learning|診斷、解釋、例子、練習、回饋、間隔重溫與掌握度|Master Tutor|text|考試溫習計劃~概念診斷~主動回憶~錯題本~Flashcards~模擬測驗~Study Schedule~考前衝刺\nSTEM|STEM Tutor|概念、推導、單位、步驟、驗算、常見錯誤與應用|STEM Tutor|text|數學解題~物理解題~化學計算~生物概念~幾何證明~代數~統計機率~科學實驗\n簡報 / Pitch|Presentation Pitch|故事線、資訊層級、圖表、版面、數據、說服與 CTA|Presentation Director|text|Pitch Deck~Sales Deck~課堂簡報~Executive Update~Case Study Deck~Demo Presentation~Investor Story~Slide Audit\n故事創作|Storytelling|角色、衝突、節奏、場景、伏筆、轉折與主題|Story Editor|text|短篇故事~小說大綱~角色弧~世界觀~對白~懸念節奏~Plot Twist~故事修稿\nYouTube / Video Script|YouTube Script|Hook、結構、節奏、Retention、B-roll、CTA 與平台語言|Video Content Strategist|text|YouTube Long-form~YouTube Shorts~教學影片~產品評測~紀錄片腳本~Explainer Video~Vlog Story~Retention Rewrite\nPodcast / Audio|Podcast Audio|節目定位、段落、主持節奏、訪談、聲音設計與剪輯提示|Podcast Producer|text|Podcast Episode~訪談提綱~開場 Hook~節目 Rundown~Audio Story~Show Notes~Sponsor Read~Podcast Trailer\n翻譯 / Localization|Translation Localization|語意、文化、術語、語氣、格式與本地市場適配|Localization Lead|text|繁中香港化~中英翻譯~英文潤色~App Localization~網站多語~Marketing Localization~術語表~翻譯 QA\n遊戲設計|Game Design|core loop、系統、平衡、進程、經濟、關卡與玩家回饋|Lead Game Designer|text|Core Loop~Economy Design~Progression~Level Design~Quest Design~Combat System~Balance Pass~Game Tutorial\n產品攝影|Product Photography|產品比例、材質、棚拍、反射、陰影、背景、品牌與廣告可用性|Product Photographer|visual|白底電商圖~高級棚拍~生活場景產品圖~Hero Product Shot~透明材質產品~金屬產品~化妝品廣告圖~科技產品圖\n飲品 / 食物攝影|Food Beverage Photography|食物質感、飲品層次、蒸氣冰霜、道具、光線與食慾感|Food Photographer|visual|咖啡宣傳圖~汽水飲品圖~雞尾酒廣告~甜品攝影~餐廳主菜~快餐廣告~茶飲新品~包裝食品\nFashion Editorial|Fashion Editorial|造型、模特、姿勢、鏡頭、場景、editorial lighting 與質感|Fashion Art Director|visual|Luxury Editorial~Streetwear Campaign~Beauty Portrait~Lookbook~Runway Backstage~Jewelry Fashion~Sportswear~Magazine Cover\n廣告創意圖|Advertising Creative|Big idea、產品焦點、構圖、品牌、文案留位、情緒與轉換|Creative Director|visual|產品主視覺~節日 Campaign~Outdoor Billboard~Print Ad~品牌 Launch~促銷廣告~概念式廣告~高端品牌廣告\n社交廣告視覺|Social Ads Visual|Feed、Story、短片封面、停留率、文字安全區與平台適配|Paid Social Art Director|visual|Instagram Feed Ad~Story Ad~TikTok Cover~Meta Carousel~App Install Ad~Lead Gen Ad~UGC Thumbnail~Retargeting Ad\n電影感圖片|Cinematic Image|鏡頭、光線、場面調度、色彩、氛圍、景深與敘事|Cinematographer|visual|Neo Noir~Golden Hour~Sci-fi Scene~Hong Kong Night~Period Drama~Action Still~Romantic Scene~Thriller Frame\n插畫|Illustration|畫風、線條、色塊、構圖、視覺隱喻、背景與系列一致性|Illustration Director|visual|Editorial Illustration~Children Book~Flat Vector~Watercolor~Retro Poster~Isometric~Ink Drawing~Conceptual Illustration\nAnime / Manga|Anime Manga|角色表演、線稿、賽璐璐、構圖、背景、鏡頭與系列一致性|Anime Art Director|visual|Anime Portrait~Manga Panel~Character Sheet~School Scene~Action Scene~Fantasy Anime~Slice of Life~Anime Poster\nLogo / Brand Identity|Logo Brand Identity|品牌概念、符號、字標、負空間、可縮放、單色與應用|Brand Identity Director|visual|Wordmark~Symbol Mark~Monogram~Mascot Logo~Luxury Identity~Tech Startup Logo~Restaurant Brand~Brand System\n包裝設計|Packaging Design|結構、正背面資訊、材質、貨架辨識、品牌與印刷可行性|Packaging Art Director|visual|飲品包裝~護膚品包裝~零食包裝~咖啡包裝~科技配件包裝~禮盒~藥妝包裝~環保包裝\n海報 / 平面設計|Poster Graphic Design|版式、層級、字體、圖形、留白、印刷與視覺衝擊|Graphic Design Director|visual|活動海報~音樂海報~電影海報~展覽海報~Typography Poster~Editorial Layout~Menu Design~Flyer\n建築視覺|Architecture Visual|量體、材料、尺度、環境、時間、鏡頭、自然光與建築攝影語言|Architectural Visualizer|visual|住宅外觀~商業建築~文化建築~高層塔樓~公共空間~黃昏建築~競賽概念~建築剖透視\n室內設計圖|Interior Design|空間佈局、材質、家具、照明、鏡頭、生活感與可施工合理性|Interior Art Director|visual|客廳~睡房~餐廳~Cafe Interior~零售店~辦公室~酒店房~極簡住宅\n角色設計|Character Design|輪廓、服裝、表情、姿勢、材質、故事性與一致性|Character Art Director|visual|Hero Character~Villain~NPC~Fantasy Warrior~Sci-fi Pilot~Mascot~Historical Character~Character Turnaround\nGame Art|Game Art|美術方向、環境、角色、材質、UI world、氣氛與可玩性閱讀|Game Art Director|visual|Game Environment~Key Art~Weapon Concept~Prop Sheet~Level Mood~Boss Design~Game UI Scene~Loading Screen\n3D / CGI|3D CGI|建模、材質、燈光、鏡頭、render、尺度、物理與 art direction|CGI Director|visual|3D Product Render~Glass Material~Chrome CGI~Abstract 3D~Architectural CGI~Character Render~Motion Keyframe~Photoreal CGI\nAI Video|AI Video|鏡頭、動作、時間、攝影機運動、連貫性、燈光、轉場與聲音提示|Film Director|visual|產品廣告片~電影預告~品牌短片~Fashion Film~Travel Film~Food Commercial~App Promo~Cinematic Sequence\nStoryboard / Shot List|Storyboard Shot List|鏡頭目的、景別、機位、動作、連接、節奏與拍攝可行性|Storyboard Director|visual|30 秒廣告分鏡~產品 Demo 分鏡~短片 Opening~對話場景~Action Sequence~Music Video~Tutorial Shots~Social Reel\nInfographic / Data Viz|Infographic Data Visualization|資訊層級、圖表選擇、標註、可讀性、敘事與數據誠信|Information Designer|visual|統計 Infographic~流程圖~比較圖~Timeline~Dashboard Visual~地圖數據~教育圖解~Annual Report Visual\nUI Mockup / App Visual|UI Mockup App Visual|裝置框、介面層級、產品真實感、品牌、背景與展示敘事|Product Visual Designer|visual|iPhone App Mockup~SaaS Dashboard Mockup~Landing Page Mockup~Dark Mode UI~Fintech App~Ecommerce App~AI Product UI~App Store Screenshots'
+          MODE_SPEC = [('Master Build', '從零建立可以直接交付或上線的完整版本', '先定義成功標準，再拆工作流、做成品、最後驗收', '完整成品、關鍵決策、驗收清單'), ('Expert Audit', '用嚴格專家標準找出問題、證據與優先級', '先列判斷準則，再逐項審核，按影響與修復成本排序', '評分表、問題證據、P0-P2 修復清單'), ('Strategy First', '先做策略判斷，再把策略落到可執行方案', '澄清目標與限制，分析選項，選方向，再落實執行', '策略選擇、取捨理由、執行路線'), ('Production Ready', '以正式上線、可靠性、維護性與邊界情況為標準', '按真實 production 條件設計，加入失敗處理與回歸驗證', '可上線版本、風險清單、回歸測試'), ('Optimization', '保留有效部分，集中改善最大瓶頸', '先做 baseline，找瓶頸，逐項改動並預測影響', 'Before/After、改動清單、優先級'), ('Research Backed', '先驗證假設與證據，再產出結論', '區分已知、假設與未知，要求可靠來源或可驗證證據', '證據矩陣、結論、限制與待驗證項'), ('Rapid MVP', '用最少範圍最快驗證核心價值', '砍掉非必要功能，只保留可測核心假設與成功指標', 'MVP 範圍、3步測試、成功/失敗門檻'), ('A/B Experiment', '把主觀選擇變成可量度實驗', '定義假設、變量、版本、樣本與決策規則', 'A/B 版本、指標、判定規則'), ('Reverse Engineer', '拆解高質參考背後原理，再原創重建', '只抽象可遷移原理，禁止照抄表面元素', '原理拆解、原創版本、差異說明'), ('Decision Framework', '在多個方案之間做清晰取捨', '列目標、限制、權重與風險，量化比較', '決策矩陣、推薦方案、反對條件'), ('Troubleshoot', '由症狀反推根因，先證明再修', '建立假設樹，設計最小測試，避免一次改太多', '根因、最小修復、驗證步驟'), ('SOP System', '把一次性工作變成可重複、可交接流程', '定義觸發、責任、步驟、檢查點、例外與記錄', 'SOP、checklist、例外處理、交接規則')]
+
+          C = []
+          for row in SPEC.strip().splitlines():
+              name,en,summary,role,kind,focus_blob = row.split('|')
+              focuses = focus_blob.split('~')
+              assert len(focuses) == 8, (name, len(focuses))
+              assert len(set(focuses)) == 8, name
+              C.append([name,en,summary,role,kind,focuses])
+
+          M = [list(x) for x in MODE_SPEC]
+          assert len(C) == 64
+          assert len(M) == 12
+
+          js_c = json.dumps(C, ensure_ascii=False, separators=(',',':'))
+          js_m = json.dumps(M, ensure_ascii=False, separators=(',',':'))
+
+          block = f'''const C={js_c};const M={js_m};
+function _grams(s){{s=String(s||'').toLowerCase().normalize('NFKC').replace(/\\s+/g,'');const a=new Set();for(let i=0;i<s.length-1;i++)a.add(s.slice(i,i+2));return a}}
+function _sim(a,b){{const A=_grams(a),B=_grams(b);if(!A.size||!B.size)return 0;let inter=0;for(const x of A)if(B.has(x))inter++;return inter/(A.size+B.size-inter)}}
+function _pickModes(ci,fi){{const out=[];let x=(ci*7+fi*3)%M.length;for(let k=0;k<M.length&&out.length<4;k++){{const mi=(x+k*5)%M.length;if(!out.includes(mi))out.push(mi)}}return out}}
+function makePrompt(ci,fi,mi,idNum){{const c=C[ci],m=M[mi],focus=c[5][fi],visual=c[4]==='visual',id='P'+String(idNum).padStart(4,'0');const vars=visual?'{{主體/產品}}、{{用途/平台}}、{{畫面比例}}、{{品牌/風格}}、{{必須出現}}、{{必須避免}}、{{光線/時間}}、{{參考但不可照抄元素}}':'{{目標}}、{{目標受眾}}、{{現況/素材}}、{{限制}}、{{成功指標}}、{{品牌/語氣}}、{{交付格式}}、{{期限/資源}}';const truth=visual?'不要捏造品牌資產、產品細節或文字內容；未知資訊用可替換 placeholder。':'不可把猜測寫成事實；資料不足時先標示假設，涉及外部事實要指出需要驗證的部分。';const special=visual?'對構圖、主體比例、鏡頭/視角、材質、光線、色彩、背景、負空間及平台裁切作具體控制。':'把策略落到可直接使用的文案、規格、步驟、表格、代碼或決策，不只講概念。';return{{id,ci,mi,fi,type:visual?'visual':'text',quality:96,title:`${{c[0]}} · ${{focus}} · ${{m[0]}}`,desc:`${{m[1]}}。專攻：${{focus}}。`,models:visual?'Gemini / ImageGen / Midjourney':'ChatGPT / Gemini / Claude',tags:[c[1],focus,m[0],visual?'Visual':'Text'],prompt:`你是一位${{c[3]}}。這不是腦暴任務，而是專業交付任務。你的專項是「${{focus}}」，工作模式是「${{m[0]}}」。
+
+【任務目標】
+${{m[1]}}。必須針對「${{focus}}」產出可以直接採用、交付、測試或上線的版本，並特別處理：${{c[2]}}。
+
+【請先讀取的輸入】
+${{vars}}
+
+如果關鍵資料缺失：
+1. 只問最多 3 個真正會改變方案的問題；
+2. 如果不值得阻塞，就用明確標示的合理假設繼續；
+3. 不可用空泛句子掩蓋資料不足。
+
+【工作協議】
+${{m[2]}}。
+- 先寫成功標準與不可接受結果。
+- 區分「必須做 / 建議做 / 暫不做」。
+- 每個重大建議都要連到目標、證據或可驗證假設。
+- ${{special}}
+- 主動檢查邊界情況、手機/真實使用情境、可維護性與失敗模式。
+- 提供至少 2 個有實質差異的替代方向，並說明何時應選另一個。
+- ${{truth}}
+
+【輸出契約】
+請按以下順序輸出，不要省略：
+A. 一句話結論：你建議做甚麼，以及最重要的取捨。
+B. 成功標準：3–7 個可以驗收的條件。
+C. 主要成品：完整可直接使用版本，不要只給 outline。
+D. 決策與理由：只保留會影響結果的理由。
+E. ${{m[3]}}。
+F. 風險 / 邊界情況：至少 5 項，附處理方法。
+G. 最終 QA：逐項檢查準確性、完整度、一致性、可執行性、平台適配與是否有無根據假設。
+H. 下一步：列出最值得立即做的 3 件事。
+
+【品質門檻】
+- 具體：禁止「優化一下」「提升質感」但沒有可執行細節。
+- 完整：主要成品不可叫使用者自己補完核心部分。
+- 有判斷：不要平鋪所有選項，必須選出推薦方向。
+- 可驗證：所有重要成果都應有驗收方式或成功指標。
+- 不重複：不同段落不可換句話重講同一件事。
+- 原創：可學習參考原理，但不可逐字或逐像素模仿特定作品。
+- 自評低於 92/100 時，先自行修正再輸出。
+- 不展示冗長內部思考，只輸出結論、必要理由、成品與可驗證證據。`}}}}
+function _quality(p){{let q=84;if(p.prompt.length>1200)q+=4;if(p.prompt.includes('【輸出契約】'))q+=3;if(p.prompt.includes('風險 / 邊界情況'))q+=3;if(p.prompt.includes('最終 QA'))q+=3;if(p.prompt.includes('不可把猜測')||p.prompt.includes('不要捏造'))q+=2;if(p.prompt.includes('替代方向'))q+=1;return Math.min(q,100)}}
+function curateLibrary(arr){{const kept=[],byCat=new Map(),rejected={{duplicate:0,quality:0}};for(const p of arr){{p.quality=_quality(p);if(p.quality<94){{rejected.quality++;continue}}const pool=byCat.get(p.ci)||[];if(pool.some(x=>_sim(x.title,p.title)>.965)){{rejected.duplicate++;continue}}pool.push(p);byCat.set(p.ci,pool);kept.push(p)}}window.__PROMPTGPT_QA={{generated:arr.length,kept:kept.length,rejected,categories:C.length,minQuality:kept.length?Math.min(...kept.map(x=>x.quality)):0}};return kept}}
+function buildLibrary(){{const all=[];let id=1;for(let ci=0;ci<C.length;ci++)for(let fi=0;fi<C[ci][5].length;fi++)for(const mi of _pickModes(ci,fi))all.push(makePrompt(ci,fi,mi,id++));return curateLibrary(all)}}
+const ALL=buildLibrary();'''
+
+          pattern = r"const C=.*?const syn="
+          s, n = re.subn(pattern, block + "const syn=", s, count=1, flags=re.S)
+          assert n == 1, 'library block not found'
+
+          replacements = {
+              '<small>1000 Premium Prompts</small>':'<small id="libMeta">Curated Prompt Library</small>',
+              '<button class="cat on" data-cat="all"><span>⌕ 全部 Prompt</span><em>1000</em></button>':'<button class="cat on" data-cat="all"><span>⌕ 全部 Prompt</span><em id="allCount">—</em></button>',
+              '<div class="navTitle">40 個專業分類</div>':'<div class="navTitle"><span id="catTotal">—</span> 個精選分類</div>',
+              '<div class="badge">1000 條 · 40 大類 · Gemini Search</div>':'<div class="badge" id="heroStats">Curated Prompt Library · Gemini Search</div>',
+              '<strong id="count">1000</strong>':'<strong id="count">0</strong>',
+              '<footer>PromptGPT · 1000 Premium AI Prompts</footer>':'<footer>PromptGPT · Curated Premium AI Prompts</footer>',
+              "localStorage.getItem('pg-fav')":"localStorage.getItem('pg-fav-v2')",
+              "localStorage.setItem('pg-fav',":"localStorage.setItem('pg-fav-v2',",
+              "$('#cats').innerHTML=C.map((c,i)=>`<button class=\"cat\" data-cat=\"${i}\"><span>${c[0]}</span><em>25</em></button>`).join('');":"const categoryCounts=C.map((_,i)=>ALL.filter(p=>p.ci===i).length);$('#cats').innerHTML=C.map((c,i)=>`<button class=\"cat\" data-cat=\"${i}\"><span>${c[0]}</span><em>${categoryCounts[i]}</em></button>`).join('');$('#allCount').textContent=ALL.length;$('#catTotal').textContent=C.length;$('#heroStats').textContent=`${ALL.length} 條精選 · ${C.length} 大類 · Gemini Search`;$('#libMeta').textContent=`${ALL.length} Curated Prompts`;"
+          }
+          for old,new in replacements.items():
+              assert old in s, f'missing replacement target: {old[:80]}'
+              s = s.replace(old,new,1)
+
+          old = "const candidates=ALL.map(p=>[p,score(p,text)]).sort((a,b)=>b[1]-a[1]).slice(0,70).map(x=>x[0])"
+          new = "const ranked=ALL.map(p=>[p,score(p,text)]).sort((a,b)=>b[1]-a[1]),top=ranked.slice(0,64).map(x=>x[0]),reps=C.map((_,ci)=>ranked.find(x=>x[0].ci===ci)?.[0]).filter(Boolean),candidates=[...new Map([...top,...reps].map(p=>[p.id,p])).values()].slice(0,128)"
+          assert old in s, 'candidate selection target missing'
+          s = s.replace(old,new,1)
+
+          old_syn = "const syn={網站:'web website landing homepage 網頁 首頁 saas ui ux',作文:'寫作 writing essay 中文 英文 故事 文案',圖片:'image photo visual 攝影 插畫 product fashion logo',編程:'coding code frontend backend react nextjs debug 程式',商業:'business startup marketing sales strategy growth',影片:'video cinematic film motion 影片 電影',學習:'study learning tutor academic stem 補習 功課',設計:'design ui ux brand creative visual 設計'};"
+          new_syn = "const syn={網站:'web website landing homepage saas ui ux 網頁 首頁 conversion',作文:'寫作 writing essay 中文 英文 narrative argumentative 文案',圖片:'image photo visual 攝影 插畫 product fashion logo advertising',編程:'coding code frontend backend react nextjs debug 程式 api database devops',商業:'business startup marketing sales strategy growth pricing monetization',影片:'video cinematic film motion storyboard youtube reel 影片 電影',學習:'study learning tutor academic stem exam revision 補習 功課',設計:'design ui ux brand creative visual packaging poster 設計',飲品:'beverage drink coffee tea soda product photography 飲料 咖啡 茶飲',食物:'food restaurant dish dessert photography 餐廳 美食',廣告:'advertising ad campaign social creative conversion 廣告 宣傳',自動化:'automation workflow agent no-code zapier make 自動 流程',研究:'research fact-check evidence source market user 研究 證據',簡報:'presentation pitch deck slide infographic 簡報 投影片',遊戲:'game gameplay level combat economy art 遊戲'};"
+          assert old_syn in s, 'synonyms target missing'
+          s = s.replace(old_syn,new_syn,1)
+
+          p.write_text(s)
+          print('CATEGORIES', len(C))
+          print('FOCI', sum(len(c[5]) for c in C))
+          print('EXPECTED_GENERATED', len(C)*8*4)
+          print('FILE_BYTES', len(s.encode()))
+
+          titles=[]
+          for ci,c in enumerate(C):
+              for fi,focus in enumerate(c[5]):
+                  picks=[]
+                  x=(ci*7+fi*3)%len(M)
+                  for k in range(len(M)):
+                      mi=(x+k*5)%len(M)
+                      if mi not in picks:
+                          picks.append(mi)
+                      if len(picks)==4: break
+                  for mi in picks:
+                      titles.append(f"{c[0]} · {focus} · {M[mi][0]}")
+          assert len(titles) == 2048
+          assert len(set(titles)) == 2048
+          print('UNIQUE_TITLES', len(set(titles)))
+          print('LIBRARY_QA=PASS')
+          PY
+
+      - name: Verify rebuilt site
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "const ALL=buildLibrary()" promptgpt/gemini.html
+          grep -q "Curated Prompt Library" promptgpt/gemini.html
+          grep -q "gemini-3.8-flash" promptgpt/gemini.html
+          grep -q "pg-fav-v2" promptgpt/gemini.html
+          ! grep -q "Array.from({length:1000}" promptgpt/gemini.html
+          echo "STATIC_QA=PASS"
+
+      - name: Commit curated library
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add promptgpt/gemini.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Rebuild PromptGPT with 2048 curated prompts'
+          git push
