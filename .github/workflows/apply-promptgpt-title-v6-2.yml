@@ -16,19 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Rebuild all title layers
+      - name: Apply final semantic polish
         shell: bash
         run: |
           set -euo pipefail
-          python promptgpt/redesign_titles_v6.py
-          python - <<'PY'
-          from pathlib import Path
-          p=Path('promptgpt/gemini.html')
-          s=p.read_text()
-          s=s.replace("data:{'Research Backed':'幫我分析','Master Build':'幫我分析'","data:{'Research Backed':'幫我分析','Master Build':'幫我整理'")
-          p.write_text(s)
-          PY
-          python promptgpt/refine_titles_v6_1.py
           python promptgpt/refine_titles_v6_2.py
       - name: Final semantic QA
         shell: bash
