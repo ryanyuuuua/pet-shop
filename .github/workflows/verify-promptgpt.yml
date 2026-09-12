@@ -13,34 +13,29 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify public PromptGPT CDN and source
+      - name: Verify fixed PromptGPT CDN and Gemini integration
         shell: bash
         run: |
           set -euo pipefail
-          LIVE='https://rawcdn.githack.com/ryanyuuuua/pet-shop/7ae715252038f9c5fe156f0ca7cb3053ec32a054/promptgpt/gemini.html'
-          SRC='https://raw.githubusercontent.com/ryanyuuuua/pet-shop/7ae715252038f9c5fe156f0ca7cb3053ec32a054/promptgpt/gemini.html'
+          SHA='e1181eecf0f3c1234e9f0bbb402c753459acc1ee'
+          LIVE="https://rawcdn.githack.com/ryanyuuuua/pet-shop/$SHA/promptgpt/gemini.html"
+          SRC="https://raw.githubusercontent.com/ryanyuuuua/pet-shop/$SHA/promptgpt/gemini.html"
 
           LIVE_CODE=$(curl -sS -L --max-time 30 -o /tmp/promptgpt-live.html -w '%{http_code}' "$LIVE")
           SOURCE_CODE=$(curl -sS -L --max-time 30 -o /tmp/promptgpt-source.html -w '%{http_code}' "$SRC")
-
           echo "LIVE_HTTP_STATUS=$LIVE_CODE"
           echo "SOURCE_HTTP_STATUS=$SOURCE_CODE"
-          echo "LIVE_BYTES=$(wc -c < /tmp/promptgpt-live.html)"
-          echo "SOURCE_BYTES=$(wc -c < /tmp/promptgpt-source.html)"
-
-          LIVE_TITLE=$(grep -o -m1 '<title>[^<]*</title>' /tmp/promptgpt-live.html || true)
-          SOURCE_TITLE=$(grep -o -m1 '<title>[^<]*</title>' /tmp/promptgpt-source.html || true)
-          echo "LIVE_TITLE=${LIVE_TITLE:-NONE}"
-          echo "SOURCE_TITLE=${SOURCE_TITLE:-NONE}"
-
           test "$LIVE_CODE" = "200"
           test "$SOURCE_CODE" = "200"
           grep -q 'PromptGPT' /tmp/promptgpt-live.html
-          grep -q 'Gemini' /tmp/promptgpt-live.html
           grep -q '1000 Premium Prompts' /tmp/promptgpt-live.html
-          grep -q 'pg-gemini-key' /tmp/promptgpt-live.html
+          grep -q 'gemini-3.8-flash' /tmp/promptgpt-live.html
+          grep -q 'Gemini 驗證失敗' /tmp/promptgpt-live.html
+          if grep -q "temperature:.1" /tmp/promptgpt-live.html; then
+            echo 'OLD_TEMPERATURE_CONFIG_FOUND'
+            exit 1
+          fi
           cmp -s /tmp/promptgpt-live.html /tmp/promptgpt-source.html
-
-          echo 'LIVE_PAGE_MARKERS=PASS'
-          echo 'CDN_MATCHES_SOURCE=PASS'
-          echo 'PROMPTGPT_LIVE_VERIFY=PASS'
+          echo 'FIXED_CDN_MATCHES_SOURCE=PASS'
+          echo 'GEMINI_3_8_MARKERS=PASS'
+          echo 'PROMPTGPT_FIXED_VERIFY=PASS'
