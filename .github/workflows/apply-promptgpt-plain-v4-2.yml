@@ -58,3 +58,5 @@ jobs:
           git add promptgpt/gemini.html
           git commit -m 'Polish PromptGPT UI for non-technical users'
           git push
+
+# v4.2 final cleanup trigger
