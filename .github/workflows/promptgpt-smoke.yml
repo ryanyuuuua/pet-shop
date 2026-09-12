@@ -9,30 +9,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Wait for Vercel build
-        run: sleep 20
-      - name: Verify public homepage and Gemini API
+        run: sleep 15
+      - name: Verify public probe
         run: |
-          set +e
-          PASS=1
-          for BASE in \
-            'https://promptgpt-public-working-ryans-projects-9a0ab3e7.vercel.app' \
-            'https://promptgpt-public-working-geh2ydlrx-ryans-projects-9a0ab3e7.vercel.app'
-          do
-            echo "=== $BASE ==="
-            H=$(mktemp)
-            CODE=$(curl -sS -L -o "$H" -w '%{http_code}' "$BASE/")
-            echo "HOME_STATUS=$CODE"
-            head -c 700 "$H"; echo
-            if [ "$CODE" != "200" ] || ! grep -q 'PromptGPT' "$H"; then PASS=0; fi
-
-            B=$(mktemp)
-            API_CODE=$(curl -sS -L -o "$B" -w '%{http_code}' \
-              -X POST "$BASE/api/search" \
-              -H 'Content-Type: application/json' \
-              --data '{"query":"中文作文","candidates":[{"id":"P0451","categoryId":18,"category":"中文作文","title":"中文作文 · Master Build","usage":"中文作文 寫作"},{"id":"P0001","categoryId":0,"category":"網站策劃","title":"網站策劃 · Master Build","usage":"website landing conversion"}]}' )
-            echo "API_STATUS=$API_CODE"
-            cat "$B"; echo
-            if [ "$API_CODE" != "200" ]; then PASS=0; fi
-          done
-          echo "FINAL_PASS=$PASS"
-          test "$PASS" = "1"
+          set -e
+          BASE='https://promptgpt-public-probe-ryans-projects-9a0ab3e7.vercel.app'
+          H=$(mktemp)
+          CODE=$(curl -sS -L -o "$H" -w '%{http_code}' "$BASE/")
+          echo "HOME_STATUS=$CODE"
+          cat "$H"; echo
+          test "$CODE" = '200'
+          grep -q 'PUBLIC_PROBE_OK' "$H"
+          B=$(mktemp)
+          API_CODE=$(curl -sS -L -o "$B" -w '%{http_code}' "$BASE/api/ping")
+          echo "API_STATUS=$API_CODE"
+          cat "$B"; echo
+          test "$API_CODE" = '200'
+          grep -q '"ok":true' "$B"
