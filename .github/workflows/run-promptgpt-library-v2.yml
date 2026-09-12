@@ -1,0 +1,40 @@
+name: Build PromptGPT Library V2
+
+on:
+  push:
+    paths:
+      - '.github/workflows/run-promptgpt-library-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rebuild library
+        run: python promptgpt/run_library_rebuild.py
+
+      - name: Verify output
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "const ALL=buildLibrary()" promptgpt/gemini.html
+          grep -q "Curated Prompt Library" promptgpt/gemini.html
+          grep -q "pg-fav-v2" promptgpt/gemini.html
+          grep -q "gemini-3.8-flash" promptgpt/gemini.html
+          ! grep -q "Array.from({length:1000}" promptgpt/gemini.html
+          echo "PROMPT_LIBRARY_V2_QA=PASS"
+
+      - name: Commit rebuilt site
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add promptgpt/gemini.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Rebuild PromptGPT with curated library v2'
+          git push
