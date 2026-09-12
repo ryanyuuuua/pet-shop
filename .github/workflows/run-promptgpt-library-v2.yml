@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - '.github/workflows/run-promptgpt-library-v2.yml'
+      - 'promptgpt/run_library_rebuild.py'
   workflow_dispatch:
 
 permissions:
