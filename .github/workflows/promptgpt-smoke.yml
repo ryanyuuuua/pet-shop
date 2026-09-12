@@ -1,0 +1,34 @@
+name: PromptGPT Smoke Test
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Vercel build
+        run: sleep 25
+      - name: Check homepage
+        run: |
+          set -e
+          curl -fsS --retry 6 --retry-delay 5 --retry-all-errors \
+            https://promptgpt-working-ryans-projects-9a0ab3e7.vercel.app \
+            -o /tmp/home.html
+          grep -q 'PromptGPT' /tmp/home.html
+          echo 'HOME_OK'
+      - name: Check Gemini search API
+        run: |
+          set +e
+          BODY=$(mktemp)
+          CODE=$(curl -sS --retry 3 --retry-delay 3 \
+            -o "$BODY" -w '%{http_code}' \
+            -X POST 'https://promptgpt-working-ryans-projects-9a0ab3e7.vercel.app/api/search' \
+            -H 'Content-Type: application/json' \
+            --data '{"query":"中文作文","candidates":[{"id":"P0451","categoryId":18,"category":"中文作文","title":"中文作文 · Master Build","usage":"中文作文 寫作"},{"id":"P0001","categoryId":0,"category":"網站策劃","title":"網站策劃 · Master Build","usage":"website landing conversion"}]}' )
+          echo "HTTP_STATUS=$CODE"
+          echo '--- RESPONSE ---'
+          cat "$BODY"
+          echo
+          test "$CODE" = '200'
