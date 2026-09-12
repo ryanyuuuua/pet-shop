@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - '.github/workflows/verify-promptgpt.yml'
+      - 'promptgpt/verify_v3.py'
   workflow_dispatch:
 
 permissions:
