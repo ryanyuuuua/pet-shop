@@ -1,10 +1,10 @@
 from pathlib import Path
-import re
 
 p=Path('promptgpt/gemini.html')
 s=p.read_text(encoding='utf-8')
 
-NEW_PICK = r'''function _pickModes(ci,fi){const cat=C[ci][0];const groups={
+OLD="function _pickModes(ci,fi){const out=[];let x=(ci*7+fi*3)%M.length;for(let k=0;k<M.length&&out.length<4;k++){const mi=(x+k*5)%M.length;if(!out.includes(mi))out.push(mi)}return out}"
+NEW="""function _pickModes(ci,fi){const cat=C[ci][0];const groups={
 '網站策略':[0,2,1,4],'UI / UX':[0,2,1,4],
 'Frontend':[0,3,1,10],'Backend':[0,3,1,10],'Mobile App':[0,3,1,10],'API / Integrations':[0,3,1,10],'Database / SQL':[0,3,1,10],'AI Agent':[0,3,1,10],
 'Debugging':[10,1,4,11],'Code Review / Refactor':[1,4,10,3],'DevOps / Cloud':[0,3,10,11],
@@ -14,13 +14,10 @@ NEW_PICK = r'''function _pickModes(ci,fi){const cat=C[ci][0];const groups={
 '客戶服務':[0,11,1,4],'用戶研究':[5,0,1,9],'品牌策略':[2,0,5,1],'營運 / SOP':[11,0,1,4],'HR / 招聘':[0,11,1,4],'求職 / Portfolio':[0,1,4,2],
 '數據分析':[5,0,1,9],'研究 / Fact-check':[5,1,9,0],'學術寫作':[0,1,4,2],'中文作文':[0,1,4,2],'英文寫作':[0,1,4,2],'學習 / 考試':[0,1,5,4],'STEM':[0,1,5,4],
 '簡報 / Pitch':[0,1,4,2],'故事創作':[0,1,4,2],'YouTube / Video Script':[0,1,4,2],'Podcast / Audio':[0,1,4,2],'翻譯 / Localization':[0,1,4,2],'遊戲設計':[0,2,1,4]};
-if(groups[cat])return groups[cat];if(C[ci][4]==='visual')return[0,1,4,8];return[0,1,2,4]}
-function _friendlyTitle'''
+if(groups[cat])return groups[cat];if(C[ci][4]==='visual')return[0,1,4,8];return[0,1,2,4]}"""
 
-s,n=re.subn(r"function _pickModes\(ci,fi\)\{.*?\}\nfunction _friendlyTitle",NEW_PICK,s,count=1,flags=re.S)
-assert n==1,f'_pickModes patch failed: {n}'
-
-# Make the choice label neutral and obvious.
+assert OLD in s, 'old _pickModes not found'
+s=s.replace(OLD,NEW,1)
 s=s.replace("'Decision Framework':'幫你揀'","'Decision Framework':'比較選擇'")
 
 p.write_text(s,encoding='utf-8')
