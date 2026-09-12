@@ -1,0 +1,61 @@
+name: Patch PromptGPT Gemini Search
+
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-promptgpt-gemini.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Patch Gemini integration
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('promptgpt/gemini.html')
+          s=p.read_text()
+          s=s.replace("const MODELS=['gemini-2.5-flash','gemini-2.5-flash-lite'];","const MODELS=['gemini-3.8-flash','gemini-3.7-flash','gemini-3.6-flash','gemini-2.5-flash'];")
+          s=s.replace("setTimeout(()=>ctl.abort(),15000)","setTimeout(()=>ctl.abort(),22000)")
+          s=s.replace("generationConfig:{temperature:.1,responseMimeType:'application/json',maxOutputTokens:800}","generationConfig:{responseMimeType:'application/json',maxOutputTokens:900}")
+          s=s.replace("if(!r.ok)throw new Error(await r.text());const d=await r.json(),t=d?.candidates?.[0]?.content?.parts?.map(x=>x.text||'').join('')||'';return JSON.parse(t.trim().replace(/^```(?:json)?\\s*/i,'').replace(/```$/,'').trim())", "if(!r.ok){const raw=await r.text();let info={};try{info=JSON.parse(raw)}catch{}const e=new Error(info?.error?.message||raw||`HTTP ${r.status}`);e.status=r.status;e.code=info?.error?.status||'';e.reason=info?.error?.details?.find(x=>x?.reason)?.reason||'';e.model=model;throw e}const d=await r.json(),t=d?.candidates?.[0]?.content?.parts?.map(x=>x.text||'').join('')||'';if(!t){const e=new Error('EMPTY_RESPONSE');e.status=502;e.model=model;throw e}return {...JSON.parse(t.trim().replace(/^```(?:json)?\\s*/i,'').replace(/```$/,'').trim()),_model:model}")
+          old="status(`✦ Gemini 已完成智能重排${out.reason?' · '+out.reason:''}`)}catch(e){state.query=text;state.aiOrder=[];state.aiCats=[];render();status(API_KEY?'Gemini 暫時未能回應，已保留即時搜尋結果。':'未設定 Gemini API Key，已保留即時搜尋結果。')}"
+          new="status(`✦ ${out._model||'Gemini'} 已完成智能重排${out.reason?' · '+out.reason:''}`)}catch(e){state.query=text;state.aiOrder=[];state.aiCats=[];render();const code=e?.status?`HTTP ${e.status}`:'';const reason=e?.reason||e?.code||'';if(e?.message==='no key')status('未設定 Gemini API Key。再撳 ↑ 貼上 Key 即可使用 AI 搜尋。');else if(e?.status===401){API_KEY='';localStorage.removeItem('pg-gemini-key');status(`Gemini 驗證失敗 · ${code}${reason?' · '+reason:''}。舊 Key 已清除，再撳 ↑ 重新貼上 Key。`)}else if(e?.status===403)status(`Gemini 無權限 · ${code}${reason?' · '+reason:''}。請檢查 AI Studio Key / 專案權限。`);else if(e?.status===429)status(`Gemini 配額暫時用盡 · ${code}。已保留即時搜尋結果。`);else if(e?.name==='AbortError')status('Gemini 回應逾時，已保留即時搜尋結果。');else status(`Gemini 搜尋失敗${code?' · '+code:''}${reason?' · '+reason:''}。已保留即時搜尋結果。`)}"
+          if old not in s:
+              raise SystemExit('runAI block not found')
+          s=s.replace(old,new)
+          s=s.replace('Gemini 2.5 Flash 雲端語意重排','Gemini 3.8 Flash 雲端語意重排')
+          p.write_text(s)
+          assert "gemini-3.8-flash" in s
+          assert "temperature:.1" not in s
+          assert "Gemini 驗證失敗" in s
+          print('PATCH_OK', len(s))
+          PY
+      - name: Verify browser CORS preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sS -D /tmp/headers -o /dev/null -X OPTIONS \
+            -H 'Origin: https://rawcdn.githack.com' \
+            -H 'Access-Control-Request-Method: POST' \
+            -H 'Access-Control-Request-Headers: content-type,x-goog-api-key' \
+            https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent
+          grep -qi 'access-control-allow-origin' /tmp/headers
+          grep -qi 'x-goog-api-key' /tmp/headers
+          echo CORS_PREFLIGHT_OK
+      - name: Commit patch
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add promptgpt/gemini.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Fix Gemini 3.8 search and diagnostics'
+          git push
