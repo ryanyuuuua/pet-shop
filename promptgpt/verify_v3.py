@@ -1,5 +1,4 @@
 from pathlib import Path
-from urllib.request import urlopen
 import json, subprocess, tempfile
 
 SHA = 'e687bd3cd85ae2d903313222b12f5e3587b0d81d'
@@ -7,9 +6,11 @@ LIVE = f'https://rawcdn.githack.com/ryanyuuuua/pet-shop/{SHA}/promptgpt/gemini.h
 SRC = f'https://raw.githubusercontent.com/ryanyuuuua/pet-shop/{SHA}/promptgpt/gemini.html'
 
 def get(url):
-    with urlopen(url, timeout=30) as r:
-        assert r.status == 200, (url, r.status)
-        return r.read().decode('utf-8')
+    p = subprocess.run(
+        ['curl','-fsSL','--max-time','30','-A','Mozilla/5.0 PromptGPT-QA',url],
+        check=True, capture_output=True, text=True
+    )
+    return p.stdout
 
 live = get(LIVE)
 src = get(SRC)
