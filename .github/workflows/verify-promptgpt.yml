@@ -13,31 +13,52 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify Vercel page returns HTTP 200
+      - name: Verify live page and source
         shell: bash
         run: |
-          set -euo pipefail
+          set -u
           URL='https://promptgpt-gemini-ryans-projects-9a0ab3e7.vercel.app'
-          CODE=$(curl -sS -L --max-time 30 -o /tmp/promptgpt-live.html -w '%{http_code}' "$URL")
-          echo "VERCEL_HTTP_STATUS=$CODE"
-          test "$CODE" = "200"
-          grep -q 'PromptGPT' /tmp/promptgpt-live.html
-          grep -q '1000 Premium Prompts' /tmp/promptgpt-live.html
-          echo 'VERCEL_PAGE_MARKERS=PASS'
-
-      - name: Verify hosted PromptGPT source is reachable
-        shell: bash
-        run: |
-          set -euo pipefail
           SRC='https://raw.githubusercontent.com/ryanyuuuua/pet-shop/7ae715252038f9c5fe156f0ca7cb3053ec32a054/promptgpt/gemini.html'
-          CODE=$(curl -sS -L --max-time 30 -o /tmp/promptgpt-source.html -w '%{http_code}' "$SRC")
-          echo "SOURCE_HTTP_STATUS=$CODE"
-          test "$CODE" = "200"
-          grep -q 'PromptGPT' /tmp/promptgpt-source.html
-          grep -q 'Gemini' /tmp/promptgpt-source.html
-          grep -q 'pg-gemini-key' /tmp/promptgpt-source.html
-          echo 'SOURCE_MARKERS=PASS'
 
-      - name: Summary
-        run: |
-          echo 'PROMPTGPT_LIVE_VERIFY=PASS'
+          VERCEL_CODE=$(curl -sS -L --max-time 30 -o /tmp/promptgpt-live.html -w '%{http_code}' "$URL" || true)
+          SOURCE_CODE=$(curl -sS -L --max-time 30 -o /tmp/promptgpt-source.html -w '%{http_code}' "$SRC" || true)
+
+          echo "VERCEL_HTTP_STATUS=$VERCEL_CODE"
+          echo "SOURCE_HTTP_STATUS=$SOURCE_CODE"
+          echo "VERCEL_BYTES=$(wc -c < /tmp/promptgpt-live.html 2>/dev/null || echo 0)"
+          echo "SOURCE_BYTES=$(wc -c < /tmp/promptgpt-source.html 2>/dev/null || echo 0)"
+
+          LIVE_TITLE=$(grep -o -m1 '<title>[^<]*</title>' /tmp/promptgpt-live.html 2>/dev/null || true)
+          SOURCE_TITLE=$(grep -o -m1 '<title>[^<]*</title>' /tmp/promptgpt-source.html 2>/dev/null || true)
+          echo "VERCEL_TITLE=${LIVE_TITLE:-NONE}"
+          echo "SOURCE_TITLE=${SOURCE_TITLE:-NONE}"
+
+          if grep -qiE 'Vercel Authentication|Login to Vercel|deployment protection|Authentication Required' /tmp/promptgpt-live.html 2>/dev/null; then
+            echo 'VERCEL_PROTECTION_DETECTED=YES'
+          else
+            echo 'VERCEL_PROTECTION_DETECTED=NO'
+          fi
+
+          LIVE_OK=0
+          SOURCE_OK=0
+          if [ "$VERCEL_CODE" = "200" ] && grep -q 'PromptGPT' /tmp/promptgpt-live.html && grep -q '1000 Premium Prompts' /tmp/promptgpt-live.html; then
+            LIVE_OK=1
+            echo 'VERCEL_PAGE_MARKERS=PASS'
+          else
+            echo 'VERCEL_PAGE_MARKERS=FAIL'
+          fi
+
+          if [ "$SOURCE_CODE" = "200" ] && grep -q 'PromptGPT' /tmp/promptgpt-source.html && grep -q 'Gemini' /tmp/promptgpt-source.html && grep -q 'pg-gemini-key' /tmp/promptgpt-source.html; then
+            SOURCE_OK=1
+            echo 'SOURCE_MARKERS=PASS'
+          else
+            echo 'SOURCE_MARKERS=FAIL'
+          fi
+
+          if [ "$LIVE_OK" = "1" ] && [ "$SOURCE_OK" = "1" ]; then
+            echo 'PROMPTGPT_LIVE_VERIFY=PASS'
+            exit 0
+          fi
+
+          echo 'PROMPTGPT_LIVE_VERIFY=FAIL'
+          exit 1
