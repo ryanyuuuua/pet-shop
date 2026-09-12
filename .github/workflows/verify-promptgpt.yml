@@ -13,29 +13,65 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify fixed PromptGPT CDN and Gemini integration
+      - name: Verify curated PromptGPT CDN
         shell: bash
         run: |
           set -euo pipefail
-          SHA='e1181eecf0f3c1234e9f0bbb402c753459acc1ee'
+          SHA='52ad2adf6d96e2568ee3f5effac507e4f28f5de5'
           LIVE="https://rawcdn.githack.com/ryanyuuuua/pet-shop/$SHA/promptgpt/gemini.html"
           SRC="https://raw.githubusercontent.com/ryanyuuuua/pet-shop/$SHA/promptgpt/gemini.html"
-
           LIVE_CODE=$(curl -sS -L --max-time 30 -o /tmp/promptgpt-live.html -w '%{http_code}' "$LIVE")
           SOURCE_CODE=$(curl -sS -L --max-time 30 -o /tmp/promptgpt-source.html -w '%{http_code}' "$SRC")
           echo "LIVE_HTTP_STATUS=$LIVE_CODE"
           echo "SOURCE_HTTP_STATUS=$SOURCE_CODE"
           test "$LIVE_CODE" = "200"
           test "$SOURCE_CODE" = "200"
-          grep -q 'PromptGPT' /tmp/promptgpt-live.html
-          grep -q '1000 Premium Prompts' /tmp/promptgpt-live.html
+          grep -q 'Curated Prompt Library' /tmp/promptgpt-live.html
           grep -q 'gemini-3.8-flash' /tmp/promptgpt-live.html
-          grep -q 'Gemini 驗證失敗' /tmp/promptgpt-live.html
-          if grep -q "temperature:.1" /tmp/promptgpt-live.html; then
-            echo 'OLD_TEMPERATURE_CONFIG_FOUND'
+          grep -q '飲品 / 食物攝影' /tmp/promptgpt-live.html
+          grep -q 'UI Mockup / App Visual' /tmp/promptgpt-live.html
+          grep -q 'const ALL=buildLibrary()' /tmp/promptgpt-live.html
+          grep -q 'pg-fav-v2' /tmp/promptgpt-live.html
+          if grep -q 'Array.from({length:1000}' /tmp/promptgpt-live.html; then
+            echo 'OLD_1000_LIBRARY_FOUND'
             exit 1
           fi
           cmp -s /tmp/promptgpt-live.html /tmp/promptgpt-source.html
-          echo 'FIXED_CDN_MATCHES_SOURCE=PASS'
-          echo 'GEMINI_3_8_MARKERS=PASS'
-          echo 'PROMPTGPT_FIXED_VERIFY=PASS'
+          echo 'CURATED_CDN_MARKERS=PASS'
+          echo 'CDN_MATCHES_SOURCE=PASS'
+
+      - name: Execute library quality and dedupe runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          html=Path('/tmp/promptgpt-live.html').read_text()
+          script=html.split('<script>',1)[1].split('</script>',1)[0]
+          start=script.index('const C=')
+          marker='const ALL=buildLibrary();'
+          end=script.index(marker,start)+len(marker)
+          segment=script[start:end]
+          Path('/tmp/library-runtime.js').write_text("global.window={};\n"+segment+"\nconsole.log('RUNTIME_QA='+JSON.stringify(window.__PROMPTGPT_QA));\nconsole.log('RUNTIME_ALL='+ALL.length);\nif(ALL.length<1800)process.exit(21);\nif(window.__PROMPTGPT_QA.minQuality<94)process.exit(22);\nif(window.__PROMPTGPT_QA.categories!==64)process.exit(23);\n")
+          PY
+          node /tmp/library-runtime.js | tee /tmp/runtime.txt
+          grep -q 'RUNTIME_ALL=2048' /tmp/runtime.txt
+          grep -q '"generated":2048' /tmp/runtime.txt
+          grep -q '"kept":2048' /tmp/runtime.txt
+          grep -q '"categories":64' /tmp/runtime.txt
+          echo 'RUNTIME_LIBRARY_QA=PASS'
+
+      - name: Compile full browser script
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          html=Path('/tmp/promptgpt-live.html').read_text()
+          script=html.split('<script>',1)[1].split('</script>',1)[0]
+          Path('/tmp/compile.js').write_text('new Function('+json.dumps(script)+'); console.log("FULL_SCRIPT_SYNTAX=PASS");')
+          PY
+          node /tmp/compile.js
+
+      - name: Summary
+        run: echo 'PROMPTGPT_CURATED_V2_VERIFY=PASS'
