@@ -13,11 +13,11 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify curated PromptGPT CDN
+      - name: Verify PromptGPT V3 CDN
         shell: bash
         run: |
           set -euo pipefail
-          SHA='52ad2adf6d96e2568ee3f5effac507e4f28f5de5'
+          SHA='e687bd3cd85ae2d903313222b12f5e3587b0d81d'
           LIVE="https://rawcdn.githack.com/ryanyuuuua/pet-shop/$SHA/promptgpt/gemini.html"
           SRC="https://raw.githubusercontent.com/ryanyuuuua/pet-shop/$SHA/promptgpt/gemini.html"
           LIVE_CODE=$(curl -sS -L --max-time 30 -o /tmp/promptgpt-live.html -w '%{http_code}' "$LIVE")
@@ -28,19 +28,23 @@ jobs:
           test "$SOURCE_CODE" = "200"
           grep -q 'Curated Prompt Library' /tmp/promptgpt-live.html
           grep -q 'gemini-3.8-flash' /tmp/promptgpt-live.html
-          grep -q '飲品 / 食物攝影' /tmp/promptgpt-live.html
-          grep -q 'UI Mockup / App Visual' /tmp/promptgpt-live.html
           grep -q 'const ALL=buildLibrary()' /tmp/promptgpt-live.html
+          grep -q 'function _friendlyTitle' /tmp/promptgpt-live.html
+          grep -q '_friendlyTitle(c\[0\],focus,m\[0\])' /tmp/promptgpt-live.html
+          grep -q 'id="customNeed"' /tmp/promptgpt-live.html
+          grep -q '幫我改成我需要嘅版本' /tmp/promptgpt-live.html
+          grep -q 'async function customizeCurrentPrompt' /tmp/promptgpt-live.html
+          grep -q 'copyCustom' /tmp/promptgpt-live.html
           grep -q 'pg-fav-v2' /tmp/promptgpt-live.html
           if grep -q 'Array.from({length:1000}' /tmp/promptgpt-live.html; then
             echo 'OLD_1000_LIBRARY_FOUND'
             exit 1
           fi
           cmp -s /tmp/promptgpt-live.html /tmp/promptgpt-source.html
-          echo 'CURATED_CDN_MARKERS=PASS'
+          echo 'V3_CDN_MARKERS=PASS'
           echo 'CDN_MATCHES_SOURCE=PASS'
 
-      - name: Execute library quality and dedupe runtime
+      - name: Execute title and library runtime QA
         shell: bash
         run: |
           set -euo pipefail
@@ -52,14 +56,23 @@ jobs:
           marker='const ALL=buildLibrary();'
           end=script.index(marker,start)+len(marker)
           segment=script[start:end]
-          Path('/tmp/library-runtime.js').write_text("global.window={};\n"+segment+"\nconsole.log('RUNTIME_QA='+JSON.stringify(window.__PROMPTGPT_QA));\nconsole.log('RUNTIME_ALL='+ALL.length);\nif(ALL.length<1800)process.exit(21);\nif(window.__PROMPTGPT_QA.minQuality<94)process.exit(22);\nif(window.__PROMPTGPT_QA.categories!==64)process.exit(23);\n")
+          check = r'''\nconsole.log('RUNTIME_QA='+JSON.stringify(window.__PROMPTGPT_QA));
+console.log('RUNTIME_ALL='+ALL.length);
+console.log('TITLE_SAMPLE='+ALL.slice(0,5).map(x=>x.title).join(' || '));
+const bad=/Master Build|Expert Audit|Strategy First|Production Ready|Optimization|Research Backed|Rapid MVP|A\/B Experiment|Reverse Engineer|Decision Framework|Troubleshoot|SOP System/;
+if(ALL.length!==2048)process.exit(21);
+if(window.__PROMPTGPT_QA.minQuality<94)process.exit(22);
+if(window.__PROMPTGPT_QA.categories!==64)process.exit(23);
+if(ALL.some(p=>bad.test(p.title)))process.exit(24);
+if(!ALL.some(p=>p.title.includes('完整製作：')))process.exit(25);
+if(!ALL.some(p=>p.title.includes('專業檢查並改善：')))process.exit(26);
+console.log('FRIENDLY_TITLE_RUNTIME=PASS');\n'''
+          Path('/tmp/library-runtime.js').write_text("global.window={};\n"+segment+check)
           PY
           node /tmp/library-runtime.js | tee /tmp/runtime.txt
           grep -q 'RUNTIME_ALL=2048' /tmp/runtime.txt
-          grep -q '"generated":2048' /tmp/runtime.txt
-          grep -q '"kept":2048' /tmp/runtime.txt
-          grep -q '"categories":64' /tmp/runtime.txt
-          echo 'RUNTIME_LIBRARY_QA=PASS'
+          grep -q 'FRIENDLY_TITLE_RUNTIME=PASS' /tmp/runtime.txt
+          echo 'LIBRARY_AND_TITLE_QA=PASS'
 
       - name: Compile full browser script
         shell: bash
@@ -74,4 +87,4 @@ jobs:
           node /tmp/compile.js
 
       - name: Summary
-        run: echo 'PROMPTGPT_CURATED_V2_VERIFY=PASS'
+        run: echo 'PROMPTGPT_V3_VERIFY=PASS'
